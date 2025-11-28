@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { Zone } from '../types';
 
@@ -15,6 +15,12 @@ export const Toolbar = () => {
   const setMode = useEditorStore((state) => state.setMode);
   const transformMode = useEditorStore((state) => state.transformMode);
   const setTransformMode = useEditorStore((state) => state.setTransformMode);
+  const undo = useEditorStore((state) => state.undo);
+  const redo = useEditorStore((state) => state.redo);
+  const groupZones = useEditorStore((state) => state.groupZones);
+  const ungroupZones = useEditorStore((state) => state.ungroupZones);
+  const historyIndex = useEditorStore((state) => state.historyIndex);
+  const history = useEditorStore((state) => state.history);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,6 +92,41 @@ export const Toolbar = () => {
     }
   };
 
+  // 鍵盤快捷鍵
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (mode !== 'edit') return;
+      
+      // Ctrl+Z: 撤銷
+      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      // Ctrl+Y 或 Ctrl+Shift+Z: 重做
+      else if (e.ctrlKey && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      }
+      // Ctrl+G: 群組
+      else if (e.ctrlKey && e.key === 'g') {
+        e.preventDefault();
+        if (selectedZoneIds.length >= 2) {
+          groupZones();
+        }
+      }
+      // Ctrl+Shift+G: 取消群組
+      else if (e.ctrlKey && e.shiftKey && e.key === 'G') {
+        e.preventDefault();
+        if (selectedZoneIds.length > 0) {
+          ungroupZones();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode, undo, redo, groupZones, ungroupZones, selectedZoneIds]);
+
   return (
     <div className="toolbar">
       <h1 style={{ fontSize: '20px', marginRight: 'auto' }}>3D 工廠佈局編輯器</h1>
@@ -100,6 +141,24 @@ export const Toolbar = () => {
             disabled={!selectedZoneId}
           >
             刪除
+          </button>
+          
+          <div style={{ borderLeft: '1px solid #ddd', height: '30px', margin: '0 10px' }}></div>
+          
+          {/* 撤銷/重做 */}
+          <button 
+            onClick={undo}
+            disabled={historyIndex <= 0}
+            title="撤銷 (Ctrl+Z)"
+          >
+            ↶ 撤銷
+          </button>
+          <button 
+            onClick={redo}
+            disabled={historyIndex >= history.length - 1}
+            title="重做 (Ctrl+Y)"
+          >
+            ↷ 重做
           </button>
           
           <div style={{ borderLeft: '1px solid #ddd', height: '30px', margin: '0 10px' }}></div>
@@ -154,6 +213,24 @@ export const Toolbar = () => {
             title="貼附到底面"
           >
             ⬇️ 貼地
+          </button>
+          
+          <div style={{ borderLeft: '1px solid #ddd', height: '30px', margin: '0 10px' }}></div>
+          
+          {/* 群組功能 */}
+          <button 
+            onClick={groupZones}
+            disabled={selectedZoneIds.length < 2}
+            title="群組選中的物件"
+          >
+            🔗 群組
+          </button>
+          <button 
+            onClick={ungroupZones}
+            disabled={selectedZoneIds.length === 0}
+            title="取消群組"
+          >
+            🔓 取消群組
           </button>
           
           <div style={{ borderLeft: '1px solid #ddd', height: '30px', margin: '0 10px' }}></div>

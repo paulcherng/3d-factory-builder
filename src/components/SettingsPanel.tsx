@@ -94,13 +94,6 @@ export const SettingsPanel = () => {
             {labelFontSize}px
           </span>
         </div>
-        <div style={{ 
-          marginTop: '8px',
-          fontSize: '12px',
-          color: '#666'
-        }}>
-          預覽：<span style={{ fontSize: `${labelFontSize}px`, fontWeight: '500' }}>物體名稱</span>
-        </div>
       </div>
 
       <div style={{ marginBottom: '20px' }}>

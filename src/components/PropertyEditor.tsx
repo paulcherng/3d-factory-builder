@@ -223,6 +223,31 @@ export const PropertyEditor = () => {
       </div>
 
       <div className="form-group">
+        <label>顏色</label>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="color"
+            value={selectedZone.color || '#3498db'}
+            onChange={(e) => updateZone(selectedZone.id, { color: e.target.value })}
+            style={{ width: '60px', height: '36px', cursor: 'pointer' }}
+          />
+          <button
+            onClick={() => updateZone(selectedZone.id, { color: undefined })}
+            style={{ 
+              padding: '6px 12px',
+              fontSize: '12px',
+              backgroundColor: '#ecf0f1',
+              border: '1px solid #bdc3c7',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            重置顏色
+          </button>
+        </div>
+      </div>
+
+      <div className="form-group">
         <label>描述</label>
         <textarea
           value={description}

@@ -2,7 +2,9 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, GizmoHelper, GizmoViewcube } from '@react-three/drei';
 import { useEditorStore } from '../store/editorStore';
 import { Zone3D } from './Zone3D';
-import { useRef, useState } from 'react';
+import { SelectionBoxHelper } from './SelectionBoxOverlay';
+import { MultiSelectTransform } from './MultiSelectTransform';
+import { useRef, useState, useEffect } from 'react';
 
 interface Canvas3DProps {
   isPreview?: boolean;
@@ -20,6 +22,24 @@ export const Canvas3D = ({ isPreview = false }: Canvas3DProps) => {
   
   const orbitControlsRef = useRef<any>(null);
   const [isTransforming, setIsTransforming] = useState(false);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  // 監聽 Shift 鍵狀態
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftPressed(true);
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftPressed(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   return (
     <>
@@ -35,6 +55,9 @@ export const Canvas3D = ({ isPreview = false }: Canvas3DProps) => {
           }
         }}
       >
+      {/* 選擇框輔助器 */}
+      {!isPreview && <SelectionBoxHelper />}
+      
       {/* 環境光 */}
       <ambientLight intensity={0.5} />
       
@@ -72,7 +95,7 @@ export const Canvas3D = ({ isPreview = false }: Canvas3DProps) => {
         dampingFactor={0.05}
         minDistance={10}
         maxDistance={200}
-        enabled={!isTransforming} // 變換時禁用
+        enabled={!isTransforming && !isShiftPressed} // 變換時或按住 Shift 時禁用
         makeDefault
       />
 
@@ -102,8 +125,18 @@ export const Canvas3D = ({ isPreview = false }: Canvas3DProps) => {
           gridSize={gridSize}
           onTransformStart={() => setIsTransforming(true)}
           onTransformEnd={() => setIsTransforming(false)}
+          hideTransformControls={selectedZoneIds.length > 1} // 多選時隱藏單個物件的控制器
         />
       ))}
+
+      {/* 多選變換控制器 */}
+      {!isPreview && selectedZoneIds.length > 1 && (
+        <MultiSelectTransform 
+          selectedZoneIds={selectedZoneIds}
+          onTransformStart={() => setIsTransforming(true)}
+          onTransformEnd={() => setIsTransforming(false)}
+        />
+      )}
       </Canvas>
     </>
   );

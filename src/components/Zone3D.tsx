@@ -32,12 +32,13 @@ const Zone3DComponent = ({
   snapToGrid: shouldSnap,
   gridSize,
   onTransformStart,
-  onTransformEnd: onTransformEndCallback
-}: ZoneProps) => {
+  onTransformEnd: onTransformEndCallback,
+  hideTransformControls = false
+}: ZoneProps & { hideTransformControls?: boolean }) => {
   const meshRef = useRef<Mesh>(null);
   const transformRef = useRef<any>(null);
   const isDraggingRef = useRef(false);
-  const color = getZoneColor(zone.type);
+  const color = zone.color || getZoneColor(zone.type); // 使用自定義顏色或預設顏色
   const transformMode = useEditorStore((state) => state.transformMode);
   const updateZone = useEditorStore((state) => state.updateZone);
   const labelFontSize = useEditorStore((state) => state.labelFontSize);
@@ -67,6 +68,9 @@ const Zone3DComponent = ({
   const handleTransformStart = () => {
     isDraggingRef.current = true;
     onTransformStart?.();
+    // 在變換開始前保存歷史記錄
+    const saveHistory = useEditorStore.getState().saveHistory;
+    saveHistory();
   };
 
   // 處理變換結束
@@ -171,8 +175,8 @@ const Zone3DComponent = ({
         </div>
       </Html>
 
-      {/* Transform Controls - 只在選中時顯示 */}
-      {isSelected && meshRef.current && (
+      {/* Transform Controls - 只在選中時顯示，多選時隱藏 */}
+      {isSelected && meshRef.current && !hideTransformControls && (
         <TransformControls
           ref={transformRef}
           object={meshRef.current}
@@ -205,6 +209,7 @@ export const Zone3D = memo(Zone3DComponent, (prevProps, nextProps) => {
     prevProps.zone.dimensions[0] === nextProps.zone.dimensions[0] &&
     prevProps.zone.dimensions[1] === nextProps.zone.dimensions[1] &&
     prevProps.zone.dimensions[2] === nextProps.zone.dimensions[2] &&
-    prevProps.zone.type === nextProps.zone.type
+    prevProps.zone.type === nextProps.zone.type &&
+    prevProps.zone.color === nextProps.zone.color
   );
 });

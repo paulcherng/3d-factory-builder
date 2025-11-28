@@ -1,5 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { useEditorStore } from '../store/editorStore';
+import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+
+// 創建一個全局狀態來共享相機
+let globalCamera: THREE.Camera | null = null;
+
+export const SelectionBoxHelper = () => {
+  const { camera } = useThree();
+  
+  useEffect(() => {
+    globalCamera = camera;
+    return () => {
+      globalCamera = null;
+    };
+  }, [camera]);
+
+  return null;
+};
 
 export const SelectionBoxOverlay = () => {
   const [isSelecting, setIsSelecting] = useState(false);
@@ -15,6 +33,19 @@ export const SelectionBoxOverlay = () => {
       // 只在按住 Shift 時啟用框選
       if (!e.shiftKey) return;
       
+      // 檢查是否點擊在 canvas 上
+      const canvas = document.querySelector('canvas');
+      if (!canvas) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      if (
+        e.clientX < rect.left || e.clientX > rect.right ||
+        e.clientY < rect.top || e.clientY > rect.bottom
+      ) {
+        return;
+      }
+      
+      e.preventDefault();
       setStartPos({ x: e.clientX, y: e.clientY });
       setCurrentPos({ x: e.clientX, y: e.clientY });
       setIsSelecting(true);
@@ -22,11 +53,13 @@ export const SelectionBoxOverlay = () => {
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!isSelecting) return;
+      e.preventDefault();
       setCurrentPos({ x: e.clientX, y: e.clientY });
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
       if (!isSelecting) return;
+      e.preventDefault();
 
       // 計算選擇框範圍
       const minX = Math.min(startPos.x, currentPos.x);
@@ -34,28 +67,38 @@ export const SelectionBoxOverlay = () => {
       const minY = Math.min(startPos.y, currentPos.y);
       const maxY = Math.max(startPos.y, currentPos.y);
 
-      // 獲取 canvas 元素來進行投影計算
+      // 獲取 canvas 元素
       const canvas = document.querySelector('canvas');
-      if (!canvas) {
+      if (!canvas || !globalCamera) {
         setIsSelecting(false);
         return;
       }
 
       const rect = canvas.getBoundingClientRect();
-      
-      // 簡單的選擇邏輯：檢查物體中心點是否在框內
       const selectedIds: string[] = [];
       
-      zones.forEach((zone) => {
-        // 將 3D 位置轉換為屏幕坐標（簡化版本）
-        // 這裡我們假設物體在框內如果其位置在範圍內
-        const screenX = rect.left + (zone.position[0] + 100) * (rect.width / 200);
-        const screenY = rect.top + (100 - zone.position[2]) * (rect.height / 200);
+      // 使用 Three.js 投影來檢查物體是否在選擇框內
+      if (globalCamera) {
+        zones.forEach((zone) => {
+          const worldPos = new THREE.Vector3(
+            zone.position[0],
+            zone.position[1],
+            zone.position[2]
+          );
+          
+          // 將 3D 世界坐標轉換為屏幕坐標
+          const screenPos = worldPos.clone().project(globalCamera!);
+          
+          // 轉換為像素坐標
+          const x = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
+          const y = (-(screenPos.y) * 0.5 + 0.5) * rect.height + rect.top;
 
-        if (screenX >= minX && screenX <= maxX && screenY >= minY && screenY <= maxY) {
-          selectedIds.push(zone.id);
-        }
-      });
+          // 檢查是否在選擇框內
+          if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+            selectedIds.push(zone.id);
+          }
+        });
+      }
 
       if (selectedIds.length > 0) {
         selectMultipleZones(selectedIds);

@@ -19,6 +19,8 @@ export interface Zone {
   position: [number, number, number]; // [x, y, z]
   dimensions: [number, number, number]; // [width, height, depth] 或 [radius, height, segments]
   description: string;
+  color?: string; // 物件顏色
+  groupId?: string; // 群組 ID
 }
 
 // 環境設定介面
@@ -50,6 +52,9 @@ export interface EditorState {
   gridSize: number;
   transformMode: 'translate' | 'scale'; // 變換模式
   labelFontSize: number; // 標籤字體大小
+  history: Zone[][]; // 歷史記錄
+  historyIndex: number; // 當前歷史索引
+  groups: { [groupId: string]: string[] }; // 群組映射
 }
 
 // Store 介面
@@ -70,6 +75,11 @@ export interface EditorStore extends EditorState {
   setMode: (mode: 'edit' | 'preview') => void;
   setTransformMode: (mode: 'translate' | 'scale') => void;
   setLabelFontSize: (size: number) => void;
+  undo: () => void;
+  redo: () => void;
+  groupZones: () => void;
+  ungroupZones: () => void;
+  saveHistory: () => void;
 }
 
 // Zone 元件 Props

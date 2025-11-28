@@ -83,6 +83,21 @@ export const validateZoneUpdates = (
     validatedUpdates.description = updates.description;
   }
 
+  // 顏色可以是任意字串或 undefined
+  if (updates.color !== undefined) {
+    validatedUpdates.color = updates.color;
+  }
+
+  // 群組 ID 可以是任意字串或 undefined
+  if (updates.groupId !== undefined) {
+    validatedUpdates.groupId = updates.groupId;
+  }
+
+  // 幾何形狀
+  if (updates.geometry !== undefined) {
+    validatedUpdates.geometry = updates.geometry;
+  }
+
   // ID 不應該被更新
   if (updates.id && updates.id !== currentZone.id) {
     console.error('不能修改區域 ID');
